@@ -61,12 +61,18 @@ app.post("/register", async (request, response) => {
 
 app.post("/login", async (request, response) => {
   let { username, password } = request.body;
-  let hashedPassword = await bcrypt.compare(password, user.password);
-  let userIdentity = `select username where username="${username}";`;
-  if (userIdentity === undefined) {
+  let userIdentity = `select * from user where username="${username}";`;
+  let userIdentityResult = await DB.get(userIdentity);
+
+  if (userIdentityResult === undefined) {
     response.status(400);
     response.send("Invalid user");
   } else {
+    let hashedPassword = await bcrypt.compare(
+      password,
+      userIdentityResult.password
+    );
+    console.log(hashedPassword);
     if (hashedPassword === false) {
       response.status(400);
       response.send("Invalid password");
@@ -78,25 +84,32 @@ app.post("/login", async (request, response) => {
 });
 app.put("/change-password", async (request, response) => {
   let { username, oldPassword, newPassword } = request.body;
-  let hashedPassword = await bcrypt(oldPassword, user.password);
- if (userIdentityResult === undefined) {
+  let userIdentity = `select *  from user where username="${username}";`;
+  let userIdentityResult = await DB.get(userIdentity);
+  if (userIdentityResult === undefined) {
     response.send("User not registered");
-  }else{
-  if (hashedPassword === false) {
-    response.status(400);
-    response.send("Invalid current password");
   } else {
-    if (newPassword.length >= 5) {
+    let hashedPassword = await bcrypt.compare(
+      oldPassword,
+      userIdentityResult.password
+    );
+    if (hashedPassword === false) {
       response.status(400);
-      response.send("Password is too short");
+      response.send("Invalid current password");
     } else {
-      let hashedPassword = await bcrypt.hash(newPassword, 2);
-      let data = `update user
+      if (newPassword.length < 5) {
+        console.log(true);
+        response.status(400);
+        response.send("Password is too short");
+      } else {
+        let hashedPassword = await bcrypt.hash(newPassword, 2);
+        let data = `update user
         set password="${hashedPassword}"
         where username="${username}";`;
-      response.status(200);
-      response.send("Password updated");
+        let result = await DB.run(data);
+        response.status(200);
+        response.send("Password updated");
+      }
     }
-  }
   }
 });
