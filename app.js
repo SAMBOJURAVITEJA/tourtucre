@@ -79,6 +79,9 @@ app.post("/login", async (request, response) => {
 app.put("/change-password", async (request, response) => {
   let { username, oldPassword, newPassword } = request.body;
   let hashedPassword = await bcrypt(oldPassword, user.password);
+ if (userIdentityResult === undefined) {
+    response.send("User not registered");
+  }else{
   if (hashedPassword === false) {
     response.status(400);
     response.send("Invalid current password");
@@ -94,5 +97,6 @@ app.put("/change-password", async (request, response) => {
       response.status(200);
       response.send("Password updated");
     }
+  }
   }
 });
